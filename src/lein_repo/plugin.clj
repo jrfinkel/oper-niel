@@ -11,25 +11,23 @@
 
 (set! *warn-on-reflection* true)
 
-;; Finding repo and its files
-(def lein-version "0.2.1")
-
 (defn pwd [] (System/getProperty "user.dir"))
 
 (defn ^String projects-file [^String dir]
   (str dir "/projects.clj"))
 
 (defn ^String find-repo-root [^String starting-dir]
-  (cond (nil? starting-dir) nil ;;(throw (RuntimeException. "No enclosing repo setup found"))
+  (cond (nil? starting-dir) (throw (RuntimeException. "projects.clj must be found in any enclosing directory in order to use the lein-repo plugin."))
         (.exists (File. (projects-file starting-dir))) starting-dir
         :else (recur (.getParent (File. starting-dir)))))
 
 (def repo-root (find-repo-root (pwd)))
 
-(defn index-by [k m]
-  (into {} (for [[k elts] (group-by k m)]
-             [k (do (assert (= 1 (count elts)) (str "duplicate projects.clj deps: " k))
-                    (first elts))])))
+(defn mapify-deps [deps]
+  (into {} (for [[lib versions] (group-by first deps)]
+             (do (assert (= 1 (count versions))
+                         (str "duplicate projects.clj dependency: " lib))
+                 [lib (first versions)]))))
 
 (def repo-config
   (when repo-root
@@ -37,20 +35,18 @@
         projects-file
         slurp
         read-string
-        (update-in ['external-dependencies] #(index-by first %)))))
+        (update-in ['external-dependencies] mapify-deps))))
 
-;; for jason
 (def read-project-file
   (memoize
    (fn [project-name]
-     (let [project-dir (get-in repo-config ['internal-dependencies project-name])]
-       (when-not project-dir
-         (throw (RuntimeException. (str "Could not find project folder for " project-name))))
-       (let [project-clj (apply str (conj (if (.isAbsolute (File. ^String project-dir))
-                                            [project-dir]
-                                            [repo-root "/" project-dir]
-                                            ) "/project.clj"))]
-         (leiningen.core.project/read project-clj))))))
+     (let [project-dir (get-in repo-config ['internal-dependencies project-name])
+           _ (assert project-dir (format "internal dependency %s not declared in projects.clj" project-name))
+           abs-project-dir (if (.isAbsolute (File. ^String project-dir))
+                             project-dir
+                             (str repo-root "/" project-dir))
+           project-clj (str abs-project-dir "/project.clj")]
+       (leiningen.core.project/read project-clj)))))
 
 (defn topological-sort [child-map]
   (when (seq child-map)
@@ -82,13 +78,6 @@
                 (str "\nCONFLICTING DEP: " dep " has "
                      (count specs) " versions required: "
                      (vec specs)))))))
-
-(defn subdirs [^String d]
-  (let [f (java.io.File. d)]
-    (when (.isDirectory f)
-      (for [^java.io.File s (.listFiles f)
-            :when (.isDirectory s)]
-        (.getAbsolutePath s)))))
 
 (declare middleware)
 (def read-middlewared-project-file (memoize #(middleware (read-project-file %))))
@@ -160,51 +149,24 @@
 (declare test-all-project*)
 
 (defn middleware [my-project]
-  (cond (not repo-root)
-        my-project
-
-        (:mega? my-project) ;; include everything
-        (-> (test-all-project* (dissoc my-project :mega?))
-            (update-in [:dependencies] (fn [d] (->> d (concat (:dependencies my-project)) distinct-deps)))
-            (merge (select-keys my-project [:jvm-opts])))
-
-        :else
-        (let [subprojects  (keep read-middlewared-project-file (:internal-dependencies my-project))
-              my-augmented-project (apply merge-projects my-project subprojects)
-              {:keys [dependencies java-source-paths external-dependencies]} my-augmented-project
-              deps (->> dependencies
-                        (concat (get repo-config 'required-dependencies))
-                        (concat (for [dep external-dependencies]
-                                  (let [spec (get-in repo-config ['external-dependencies dep])]
-                                    (assert spec (str "Missing external dep " dep))
-                                    spec)))
-                        distinct-deps)]
-          (-> my-project
-              (merge my-augmented-project)
-              (assoc
-               :dependencies deps
-               :direct-source-paths (:source-paths my-project))))))
-
-(def +blacklisted-projects+
-  ;; Clojurescript doesn't play nice with riemann-client currently.
-  #{'cljs-request 'tubes 'web-frontend 'om-tools})
+  (let [subprojects (keep read-middlewared-project-file (:internal-dependencies my-project))
+        my-augmented-project (apply merge-projects my-project subprojects)
+        {:keys [dependencies java-source-paths external-dependencies]} my-augmented-project
+        deps (->> dependencies
+                  (concat (get repo-config 'required-dependencies))
+                  (concat (for [dep external-dependencies]
+                            (let [spec (get-in repo-config ['external-dependencies dep])]
+                              (assert spec (str "Missing external dep " dep))
+                              spec)))
+                  distinct-deps)]
+    (-> my-project
+        (merge my-augmented-project)
+        (assoc
+         :dependencies deps
+         :direct-source-paths (:source-paths my-project)))))
 
 (defn all-internal-deps []
-  (remove
-   +blacklisted-projects+
-   (keys (repo-config 'internal-dependencies))))
-
-(def all-source-project
-  (delay
-   (let [internal-deps (all-internal-deps)]
-     (-> (read-project-file (first internal-deps))
-         (assoc :internal-dependencies internal-deps :test-paths [])
-         (update-in [:dependencies] conj ['lein-repo lein-version])
-         middleware
-         (assoc :root repo-root
-                :eval-in :subprocess
-                :jvm-opts ^:replace ["-Xmx600m" "-XX:MaxPermSize=256m"])))))
-
+  (keys (repo-config 'internal-dependencies)))
 
 (defn test-all-project* [base]
   (let [internal-deps (all-internal-deps)
@@ -213,13 +175,11 @@
     (-> base
         (assoc :internal-dependencies internal-deps
                :test-paths test-paths)
-        (update-in [:dependencies] conj ['lein-repo lein-version])
         middleware
         (update-in [:source-paths] concat test-paths)
         (dissoc :warn-on-reflection)
         (assoc :root repo-root
-               :eval-in :subprocess
-               :jvm-opts ^:replace ["-Xmx1000m" "-XX:+UseConcMarkSweepGC" "-XX:+CMSClassUnloadingEnabled" "-XX:MaxPermSize=512M"]))))
+               :eval-in :subprocess))))
 
 (def test-all-project
   (delay (test-all-project*
