@@ -5,6 +5,7 @@ When you have multiple clojure projects with dependencies between them in the sa
 
 
 Using lein-repo is easy:
+
 1. You must have a directory which is a (grand)*parent of all the projects, the root of your clojure repo. This directory contains a file called projects.clj, which is a map containing three keys: 
 required-dependencies: seq of project.clj-style dependencies that will automatically be included with all child project.cljs
 external-dependencies: seq of project.clj-style dependencies which child project.cljs may want to require.
