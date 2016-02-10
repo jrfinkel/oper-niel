@@ -19,9 +19,9 @@ Using lein-repo is easy:
 
 example projects.clj
 
-2. In each project's project.clj, instead of `:dependencies`, you now declare `:internal-dependencies`, which is a seq of internal project names, and `:external-dependencies`, which is a seq of external dependency names (name only, no version or other info). You can still use the `:dependencies` field, but we recommend against it.
+2. In each project's `project.clj`, instead of `:dependencies`, you now declare `:internal-dependencies`, which is a seq of internal project names, and `:external-dependencies`, which is a seq of external dependency names (name only, no version or other info). You can still use the `:dependencies` field, but we recommend against it.
 
-3. All projects in your super-repo will now need to use the lein-repo plugin in order to be able to resolve their dependencies. We do not recommend putting the plugin in your `:user` profile, as this plugin really applies to specific projects and not specific users. if you do opt to put it in your user profile, be advised that you will need to additionally specify it for your `:uberjar` profile if you use uberjars.
+3. All projects in your super-repo will now need to use the lein-repo plugin in order to be able to resolve their dependencies. We do not recommend putting the plugin in your `:user` profile, as this plugin really applies to specific projects and not specific users. If you do opt to put it in your user profile, be advised that you will need to additionally specify it for your `:uberjar` profile if you use uberjars.
 
 example project.clj
 
