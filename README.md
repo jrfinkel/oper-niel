@@ -1,7 +1,7 @@
 lein-repo
 =========
 
-lein-repo is a simple and easy to use lein plugin for dependency management across different clojure projects in the same repository.
+lein-repo is a simple and easy to use lein plugin for dependency management across different clojure projects in the same repository. Never `lein-install` again!
 
 
 ### Internal Dependency Management
@@ -12,6 +12,7 @@ When you have multiple clojure projects with dependencies between them in the sa
 Using lein-repo is easy:
 
 1. You must have a directory which is a (grand)*parent of all the projects; this is the root of your clojure super-repo. This directory contains a file called `projects.clj`, which is a map containing three keys: 
+
 - `required-dependencies` a seq of project.clj-style dependencies that will automatically be included with all child project.cljs
 - `external-dependencies` a seq of project.clj-style dependencies which child project.cljs may want to require.
 - `internal-dependencies` a map from internal project name to a path to its root directory. 
