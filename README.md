@@ -13,7 +13,7 @@ Using lein-repo is easy:
 
 1. You must have a directory which is a (grand)*parent of all the projects; this is the root of your clojure super-repo. This directory contains a file called `projects.clj`, which is a map containing three keys: 
 
-- `required-dependencies` a seq of project.clj-style dependencies that will automatically be included with all child project.cljs
+- `required-dependencies` a seq of project.clj-style dependencies that will automatically be included with all child `project.clj`s. You *must* include lein-repo itself as a required dependency of you want to use our `lein test-all` command to run the unit tests from all internal projects.
 - `external-dependencies` a seq of project.clj-style dependencies which child project.cljs may want to require.
 - `internal-dependencies` a map from internal project name to a path to its root directory. 
 
