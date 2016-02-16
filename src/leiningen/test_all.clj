@@ -1,5 +1,6 @@
 (ns leiningen.test-all
   (:require [lein-repo.plugin :as plugin]
+            lein-repo.test
             [clojure.set :as set]
             [leiningen.core.eval :as eval]
             [leiningen.core.main :as main]

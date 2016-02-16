@@ -2,7 +2,6 @@
   (:use [clojure.java.io :only [copy file]])
   (:require [clojure.xml :as xml]
             [clojure.set :as set]
-            [clojure.pprint :as pprint]
             [clojure.java.shell :as shell]
             leiningen.core.project)
   (:import [java.io File]
@@ -21,13 +20,14 @@
         (.exists (File. (projects-file starting-dir))) starting-dir
         :else (recur (.getParent (File. starting-dir)))))
 
-(def repo-root (find-repo-root (pwd)))
-
 (defn mapify-deps [deps]
   (into {} (for [[lib versions] (group-by first deps)]
              (do (assert (= 1 (count versions))
                          (str "duplicate projects.clj dependency: " lib))
                  [lib (first versions)]))))
+
+;; Always in the same mega-repo, so always the same root
+(def repo-root (find-repo-root (pwd)))
 
 (def repo-config
   (when repo-root
@@ -152,12 +152,14 @@
   (let [subprojects (keep read-middlewared-project-file (:internal-dependencies my-project))
         my-augmented-project (apply merge-projects my-project subprojects)
         {:keys [dependencies java-source-paths external-dependencies]} my-augmented-project
+        lein-dep (->> my-project :plugins (filter #(= (name (first %)) "lein-repo")))
         deps (->> dependencies
                   (concat (get repo-config 'required-dependencies))
                   (concat (for [dep external-dependencies]
                             (let [spec (get-in repo-config ['external-dependencies dep])]
                               (assert spec (str "Missing external dep " dep))
                               spec)))
+                  (concat lein-dep)
                   distinct-deps)]
     (-> my-project
         (merge my-augmented-project)
