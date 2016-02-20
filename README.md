@@ -1,3 +1,10 @@
+TODO:
+- document lein test-all (and where to run it)
+- license info
+- history?
+- mention jar hell
+
+
 lein-repo
 =========
 
