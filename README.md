@@ -42,7 +42,7 @@ Example `projects.clj`:
 
 Example `project.clj`:
 ```clojure
-(defproject ml-lib-1 "0.1"
+(defproject my-lib-1 "0.1"
   :internal-dependencies [my-lib-1 my-lib-2]
   :external-dependencies [com.climate/claypoole]
   :plugins [[lein-repo "0.3.0"]])
