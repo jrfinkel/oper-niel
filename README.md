@@ -10,7 +10,7 @@ lein-repo
 lein-repo is a simple and easy to use lein plugin for dependency management across different clojure projects in the same repository. Never `lein-install` again!
 
 ### Internal Dependency Management
-When you have multiple clojure projects with dependencies between them in the same repo, managing those dependencies can get annoying. If you are working in library A, which depends on library B, and you need to make a change in B, then to get access to that change in A you need to `lein install` B, and then restart your repl in A. If you have a lot of clojure projects, this situation can arise multiple times a day, which is no fun. lein-repo solves this problem in a way that's as simple as adding a regular external dependency to your project.clj, while still allowing you to make changes to downstream libraries without ever restarting a repl or futzing on the command line.
+When you have multiple clojure projects with dependencies between them in the same repo, managing those dependencies can get annoying. If you are working in library A, which depends on library B, and you need to make a change in B, then to get access to that change in A you need to `lein install` B, and then restart your repl in A. If you have a lot of clojure projects, this situation can arise multiple times a day, which is no fun and can be a drain on your productivity. lein-repo solves this problem in a way that's as simple as adding a regular external dependency to your project.clj, while still allowing you to make changes to downstream libraries without ever restarting a repl or futzing on the command line.
 
 ### Usage
 
